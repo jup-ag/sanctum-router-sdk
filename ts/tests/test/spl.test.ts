@@ -69,8 +69,15 @@ describe("SPL Test", async () => {
 
   // PrefundSwapViaStake
 
-  it("spl-picosol-prefund-swap-via-stake-into-reserve", async () => {
+  it("spl-picosol-prefund-swap-via-stake-into-reserve-small", async () => {
     await prefundSwapViaStakeFixturesTest(1_000_000_000n, {
+      inp: PICOSOL_TOKEN_ACC_NAME,
+      out: "signer-wsol-token",
+    });
+  });
+
+  it("spl-picosol-prefund-swap-via-stake-into-reserve-large", async () => {
+    await prefundSwapViaStakeFixturesTest(750_000_000_000n, {
       inp: PICOSOL_TOKEN_ACC_NAME,
       out: "signer-wsol-token",
     });
@@ -87,8 +94,15 @@ describe("SPL Test", async () => {
     );
   });
 
-  it("spl-picosol-prefund-swap-via-stake-into-marinade", async () => {
+  it("spl-picosol-prefund-swap-via-stake-into-marinade-small", async () => {
     await prefundSwapViaStakeFixturesTest(1_000_000_000n, {
+      inp: PICOSOL_TOKEN_ACC_NAME,
+      out: "signer-msol-token",
+    });
+  });
+
+  it("spl-picosol-prefund-swap-via-stake-into-marinade-large", async () => {
+    await prefundSwapViaStakeFixturesTest(750_000_000_000n, {
       inp: PICOSOL_TOKEN_ACC_NAME,
       out: "signer-msol-token",
     });
@@ -105,8 +119,15 @@ describe("SPL Test", async () => {
     );
   });
 
-  it("spl-picosol-prefund-swap-via-stake-into-spl-bsol", async () => {
+  it("spl-picosol-prefund-swap-via-stake-into-spl-bsol-small", async () => {
     await prefundSwapViaStakeFixturesTest(1_000_000_000n, {
+      inp: PICOSOL_TOKEN_ACC_NAME,
+      out: "signer-bsol-token",
+    });
+  });
+
+  it("spl-picosol-prefund-swap-via-stake-into-spl-bsol-large", async () => {
+    await prefundSwapViaStakeFixturesTest(750_000_000_000n, {
       inp: PICOSOL_TOKEN_ACC_NAME,
       out: "signer-bsol-token",
     });
