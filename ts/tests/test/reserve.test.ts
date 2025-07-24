@@ -12,9 +12,16 @@ import { quoteDepositStake } from "@sanctumso/sanctum-router";
 
 describe("Reserve Test", async () => {
   // DepositStake
-  it("reserve-deposit-stake", async () => {
+  it("reserve-deposit-stake-small", async () => {
     await depositStakeFixturesTest({
-      inp: "reserve-deposit-stake",
+      inp: "reserve-deposit-stake-small",
+      out: "signer-wsol-token",
+    });
+  });
+
+  it("reserve-deposit-stake-large", async () => {
+    await depositStakeFixturesTest({
+      inp: "reserve-deposit-stake-large",
       out: "signer-wsol-token",
     });
   });

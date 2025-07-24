@@ -1,4 +1,4 @@
-use sanctum_reserve_core::{Fee, FeeEnum, Pool, PoolBalance, ProtocolFee};
+use sanctum_reserve_core::{Fee, FeeEnum, Pool, PoolUnstakeParams, ProtocolFee};
 use sanctum_router_core::{ReserveDepositStakeQuoter, ReserveDepositStakeSufAccs, NATIVE_MINT};
 
 use crate::{
@@ -98,10 +98,10 @@ impl ReserveRouterOwned {
 
 /// Prefund
 impl ReserveRouterOwned {
-    pub fn prefund_params(&self) -> Result<(PoolBalance, &FeeEnum), SanctumRouterError> {
+    pub fn prefund_params(&self) -> Result<(PoolUnstakeParams, &FeeEnum), SanctumRouterError> {
         let inner = self.try_inner()?;
         Ok((
-            PoolBalance {
+            PoolUnstakeParams {
                 pool_incoming_stake: inner.pool.incoming_stake,
                 sol_reserves_lamports: inner.pool_sol_reserves,
             },

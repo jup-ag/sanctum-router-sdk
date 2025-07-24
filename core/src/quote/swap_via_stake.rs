@@ -1,6 +1,6 @@
 use core::{error::Error, fmt::Display};
 
-use sanctum_reserve_core::{FeeEnum, PoolBalance, ReserveError};
+use sanctum_reserve_core::{FeeEnum, PoolUnstakeParams, ReserveError};
 
 use crate::{
     DepositStakeQuote, DepositStakeQuoter, Prefund, PrefundWithdrawStakeQuoteErr, StakeQuoteError,
@@ -15,7 +15,7 @@ pub fn quote_prefund_swap_via_stake<W: WithdrawStakeQuoter, D: DepositStakeQuote
     w_itr: impl IntoIterator<Item = W>,
     d: D,
     inp_tokens: u64,
-    reserves_balance: &PoolBalance,
+    reserves_unstake_params: &PoolUnstakeParams,
     reserves_fee: &FeeEnum,
 ) -> QuotePrefundSwapViaStakeResult<W::Error, D::Error> {
     w_itr
@@ -24,7 +24,7 @@ pub fn quote_prefund_swap_via_stake<W: WithdrawStakeQuoter, D: DepositStakeQuote
             let wsq = match map_res(w.quote_prefund_withdraw_stake(
                 inp_tokens,
                 None,
-                reserves_balance,
+                reserves_unstake_params,
                 reserves_fee,
             ))? {
                 // stop iteration with err
