@@ -239,7 +239,7 @@ dependencies = [
 [[package]]
 name = "sanctum-reserve-core"
 version = "0.1.0"
-source = "git+https://github.com/igneous-labs/sanctum-reserve-sdk.git?branch=master#17d03d6e527c797eff3fd39dbdd33a757d3ac5eb"
+source = "git+https://github.com/igneous-labs/sanctum-reserve-sdk.git?branch=master#dea2fc38938280931d6080a2744d15057fd21138"
 dependencies = [
  "borsh",
  "const-crypto",

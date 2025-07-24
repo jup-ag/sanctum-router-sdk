@@ -60,9 +60,16 @@ describe("SPL Test", async () => {
   });
 
   // PrefundWithdrawStake
-  it("spl-picosol-prefund-withdraw-stake", async () => {
+  it("spl-picosol-prefund-withdraw-stake-small", async () => {
     await prefundWithdrawStakeFixturesTest(
       1_000_000_000n,
+      PICOSOL_TOKEN_ACC_NAME
+    );
+  });
+
+  it("spl-picosol-prefund-withdraw-stake-large", async () => {
+    await prefundWithdrawStakeFixturesTest(
+      750_000_000_000n,
       PICOSOL_TOKEN_ACC_NAME
     );
   });

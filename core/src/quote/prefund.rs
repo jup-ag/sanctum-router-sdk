@@ -1,4 +1,4 @@
-use sanctum_reserve_core::{FeeEnum, PoolBalance};
+use sanctum_reserve_core::{FeeEnum, PoolUnstakeParams};
 
 use crate::{PREFUND_FLASH_LOAN_LAMPORTS, ZERO_DATA_ACC_RENT_EXEMPT_LAMPORTS};
 
@@ -25,14 +25,14 @@ pub struct Prefund<Q> {
 /// should consist of when it gets instant unstaked in order to repay the prefund flash loan
 #[inline]
 pub fn slumdog_target_lamports(
-    reserves_balance: &PoolBalance,
+    reserves_balance: &PoolUnstakeParams,
     reserves_fee: &FeeEnum,
 ) -> Option<u64> {
     reserves_fee.reverse_from_rem(reserves_balance, PREFUND_FLASH_LOAN_LAMPORTS)
 }
 
 #[inline]
-pub const fn reserves_has_enough_for_slumdog(reserves_balance: &PoolBalance) -> bool {
-    reserves_balance.sol_reserves_lamports
+pub const fn reserves_has_enough_for_slumdog(reserves_unstake_params: &PoolUnstakeParams) -> bool {
+    reserves_unstake_params.sol_reserves_lamports
         >= PREFUND_FLASH_LOAN_LAMPORTS + ZERO_DATA_ACC_RENT_EXEMPT_LAMPORTS
 }

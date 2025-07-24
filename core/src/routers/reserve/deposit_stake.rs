@@ -1,6 +1,7 @@
 use generic_array_struct::generic_array_struct;
 use sanctum_reserve_core::{
-    quote_unstake, FeeEnum, PoolBalance, ProtocolFee, ReserveError, UnstakeQuote,
+    quote_unstake, FeeEnum, PoolUnstakeParams, ProtocolFee, QuoteUnstakeOpts, ReserveError,
+    UnstakeQuote,
 };
 
 use crate::{
@@ -51,13 +52,13 @@ impl ReserveDepositStakeQuoter<'_> {
             self.fee_account,
             &self.protocol_fee_account.fee_ratios(),
             deposit_stake_total_lamports,
-            false,
+            &QuoteUnstakeOpts::DEFAULT,
         )
     }
 
     #[inline]
-    fn pool_balance(&self) -> PoolBalance {
-        PoolBalance {
+    fn pool_balance(&self) -> PoolUnstakeParams {
+        PoolUnstakeParams {
             pool_incoming_stake: self.pool_incoming_stake,
             sol_reserves_lamports: self.pool_sol_reserves,
         }

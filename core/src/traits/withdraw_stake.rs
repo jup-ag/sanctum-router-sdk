@@ -1,6 +1,6 @@
 use core::{error::Error, fmt::Display, ops::Deref};
 
-use sanctum_reserve_core::{FeeEnum, PoolBalance, ReserveError};
+use sanctum_reserve_core::{FeeEnum, PoolUnstakeParams, ReserveError};
 use sanctum_spl_stake_pool_core::STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS;
 
 use crate::{
@@ -43,7 +43,7 @@ pub trait WithdrawStakeQuoter {
         &self,
         tokens: u64,
         vote: Option<&[u8; 32]>,
-        reserves_balance: &PoolBalance,
+        reserves_unstake_params: &PoolUnstakeParams,
         reserves_fee: &FeeEnum,
     ) -> Result<Prefund<WithdrawStakeQuote>, PrefundWithdrawStakeQuoteErr<Self::Error>> {
         let WithdrawStakeQuote {
@@ -53,14 +53,14 @@ pub trait WithdrawStakeQuoter {
         } = self
             .quote_withdraw_stake(tokens, vote)
             .map_err(PrefundWithdrawStakeQuoteErr::Pool)?;
-        if !reserves_has_enough_for_slumdog(reserves_balance) {
+        if !reserves_has_enough_for_slumdog(reserves_unstake_params) {
             return Err(PrefundWithdrawStakeQuoteErr::Reserve(
                 ReserveError::NotEnoughLiquidity,
             ));
         }
         // amount of active stake that will be split
         // from the withdrawn stake account to slumdog
-        let prefund_fee = slumdog_target_lamports(reserves_balance, reserves_fee)
+        let prefund_fee = slumdog_target_lamports(reserves_unstake_params, reserves_fee)
             .ok_or(PrefundWithdrawStakeQuoteErr::Reserve(
                 ReserveError::InternalError,
             ))?
