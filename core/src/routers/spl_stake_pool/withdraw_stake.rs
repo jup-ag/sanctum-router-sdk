@@ -75,6 +75,8 @@ impl WithdrawStakeQuoter for SplWithdrawStakeQuoter<'_> {
                 current_epoch: self.curr_epoch,
             },
         )?;
+        // TODO: maybe need to handle edge case where no active stake
+        // i.e. users can withdraw from transient stake
         conv_quote(quote, vsi)
     }
 }
@@ -175,7 +177,7 @@ fn conv_quote(
     }: sanctum_spl_stake_pool_core::WithdrawStakeQuote,
     vsi: &ValidatorStakeInfo,
 ) -> Result<WithdrawStakeQuote, SplStakePoolError> {
-    if lamports_staked > vsi.active_stake_lamports() {
+    if lamports_staked > vsi.active_stake_lamports().saturating_sub(MIN_ACTIVE_STAKE) {
         // StakeWithdrawalTooLarge
         return Err(SplStakePoolError::StakeLamportsNotEqualToMinimum);
     }

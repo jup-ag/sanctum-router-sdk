@@ -10,7 +10,10 @@ import {
   routerForSwaps,
   withdrawSolFixturesTest,
 } from "../utils";
-import { quoteWithdrawSol } from "@sanctumso/sanctum-router";
+import {
+  quotePrefundWithdrawStake,
+  quoteWithdrawSol,
+} from "@sanctumso/sanctum-router";
 
 const PICOSOL_TOKEN_ACC_NAME = "signer-picosol-token";
 
@@ -72,6 +75,25 @@ describe("SPL Test", async () => {
       750_000_000_000n,
       PICOSOL_TOKEN_ACC_NAME
     );
+  });
+
+  it("spl-picosol-quote-prefund-withdraw-stake-fails-when-amt-too-much", async () => {
+    const rpc = localRpc();
+    const router = await routerForSwaps(rpc, [
+      { swap: "prefundWithdrawStake", inp: PICOSOL_MINT },
+    ]);
+    const quoteFn = () =>
+      quotePrefundWithdrawStake(router, {
+        // picsol validator list fixtures:
+        // - vsi_active_lamports=210_425__790_541_328
+        // - mint_supply=108_350__525_083_404
+        // - total_lamports=128_350__525_083_404
+        // - stake_withdrawal_fee=0
+        // (yes i know the numbers dont add up, see test fixtures README)
+        amt: 177_636_552_503_991n,
+        inp: PICOSOL_MINT,
+      });
+    expect(quoteFn).toThrowError(/StakeLamportsNotEqualToMinimum/);
   });
 
   // PrefundSwapViaStake
