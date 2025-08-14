@@ -1,5 +1,11 @@
 # Dev Notes
 
+## Publishing
+
+1. Increment version # in `Cargo.toml`
+2. `make`
+3. `cd pkg && npm publish`
+
 ## Prefer `Box<[T]>`/`Box<str>` to `Vec<T>`/`String`
 
 We usually dont need the resizeable feature of the latter.
