@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it } from "vitest";
 import {
+  expectRouterErr,
   localRpc,
-  parseRouterErr,
   prefundSwapViaStakeFixturesTest,
   prefundWithdrawStakeFixturesTest,
   routerForSwaps,
@@ -25,19 +25,15 @@ describe("Lido Test", async () => {
     const router = await routerForSwaps(rpc, [
       { swap: "prefundWithdrawStake", inp: STSOL_MINT },
     ]);
-    try {
-      quotePrefundWithdrawStake(router, {
-        // a very large amount
-        amt: 1_000_000_000_000_000_000n,
-        inp: STSOL_MINT,
-      });
-      expect.fail("should have thrown");
-    } catch (e) {
-      expect(e).toSatisfy((e) => {
-        const [code] = parseRouterErr(e);
-        return code === "PoolErr";
-      });
-    }
+    expectRouterErr(
+      () =>
+        quotePrefundWithdrawStake(router, {
+          // a very large amount
+          amt: 1_000_000_000_000_000_000n,
+          inp: STSOL_MINT,
+        }),
+      "SizeTooLargeErr:LidoError::InvalidAmount"
+    );
   });
 
   // PrefundSwapViaStake

@@ -9,11 +9,14 @@ import {
   initSyncEmbed,
   type SanctumRouterErr,
   allSanctumRouterErrs,
+  type SanctumRouterErrMsg,
 } from "@sanctumso/sanctum-router";
 import type { Rpc, SolanaRpcApi } from "@solana/kit";
 import { fetchAccountMap } from "./rpc";
 import { SPL_INIT_HARDCODES } from "./spl";
 import { NATIVE_MINT } from "./token";
+import { expect } from "vitest";
+import { mapTup } from "./ops";
 
 /**
  * Initializes, updates and returns `SanctumRouterHandle` that is ready for quoting
@@ -88,6 +91,20 @@ export function parseRouterErr(e: unknown): [SanctumRouterErr, string] {
     throw new Error(`Invalid SanctumRouterErr code ${code}`, { cause: e });
   }
   return [code, rest];
+}
+
+export async function expectRouterErr<T>(
+  f: () => T | Promise<T>,
+  expected: SanctumRouterErrMsg
+) {
+  let shouldNotHappen: T;
+  try {
+    shouldNotHappen = await f();
+  } catch (e) {
+    expect((e as Error).message).toBe(expected);
+    return;
+  }
+  throw new Error("Expected failure");
 }
 
 function assertSanctumRouterErr(code: string): code is SanctumRouterErr {

@@ -9,6 +9,18 @@ use wasm_bindgen::prelude::*;
 
 use crate::{interface::Bs58PkString, update::PoolUpdateType};
 
+const ERR_CODE_MSG_SEP: &str = ":";
+
+#[wasm_bindgen(typescript_custom_section)]
+const SANCTUM_ROUTER_ERROR_DECL: &'static str = r#"
+export type ERR_CODE_MSG_SEP = ":";
+
+/**
+ * All {@link Error} objects thrown by the SDK have messages of this format
+ */
+export type SanctumRouterErrMsg = `${SanctumRouterErr}${ERR_CODE_MSG_SEP}${string}`;
+"#;
+
 /// All {@link Error} objects thrown by SDK functions will start with
 /// `{SanctumRouterErr}:`, so that the `SanctumRouterErr` error code can be
 /// extracted by splitting on the first colon `:`
@@ -24,6 +36,8 @@ pub enum SanctumRouterErr {
     UserErr,
     PoolErr,
     InternalErr,
+    SizeTooLargeErr,
+    SizeTooSmallErr,
 }
 
 /// Top level error, all fallible functions should
@@ -44,7 +58,7 @@ impl From<SanctumRouterError> for JsValue {
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-pub struct AllSanctumRouterErrs(#[tsify(type = "SanctumRouterErr[]")] pub [SanctumRouterErr; 8]);
+pub struct AllSanctumRouterErrs(#[tsify(type = "SanctumRouterErr[]")] pub [SanctumRouterErr; 10]);
 
 /// Returns the array of all possible {@link SanctumRouterErr}s
 #[wasm_bindgen(js_name = allSanctumRouterErrs)]
@@ -60,10 +74,10 @@ pub fn all_sanctum_router_errs() -> AllSanctumRouterErrs {
         UserErr,
         PoolErr,
         InternalErr,
+        SizeTooLargeErr,
+        SizeTooSmallErr,
     ])
 }
-
-const ERR_CODE_MSG_SEP: &str = ":";
 
 pub fn invalid_pda_err() -> SanctumRouterError {
     SanctumRouterError {
@@ -100,13 +114,19 @@ pub fn marinade_err(e: MarinadeError) -> SanctumRouterError {
     const MARINADE_ERR_PREFIX: &str = "MarinadeError::";
 
     let (code, cause) = match e {
-        MarinadeError::DepositAmountIsTooLow
-        | MarinadeError::TooLowDelegationInDepositingStake
-        | MarinadeError::WithdrawStakeLamportsIsTooLow
-        | MarinadeError::SelectedStakeAccountHasNotEnoughFunds
-        | MarinadeError::StakeAccountRemainderTooLow
-        | MarinadeError::WrongValidatorAccountOrIndex => (
+        MarinadeError::WrongValidatorAccountOrIndex => (
             SanctumRouterErr::UserErr,
+            format!("{MARINADE_ERR_PREFIX}{e}"),
+        ),
+        MarinadeError::TooLowDelegationInDepositingStake
+        | MarinadeError::DepositAmountIsTooLow
+        | MarinadeError::WithdrawStakeLamportsIsTooLow => (
+            SanctumRouterErr::SizeTooSmallErr,
+            format!("{MARINADE_ERR_PREFIX}{e}"),
+        ),
+        MarinadeError::SelectedStakeAccountHasNotEnoughFunds
+        | MarinadeError::StakeAccountRemainderTooLow => (
+            SanctumRouterErr::SizeTooLargeErr,
             format!("{MARINADE_ERR_PREFIX}{e}"),
         ),
         MarinadeError::ProgramIsPaused
@@ -138,10 +158,12 @@ pub fn spl_err(e: SplStakePoolError) -> SanctumRouterError {
         | SplStakePoolError::ValidatorNotFound => {
             (SanctumRouterErr::UserErr, format!("{SPL_ERR_PREFIX}{e}"))
         }
-        SplStakePoolError::InvalidState
-        | SplStakePoolError::StakeListAndPoolOutOfDate
-        | SplStakePoolError::SolWithdrawalTooLarge
-        | SplStakePoolError::StakeLamportsNotEqualToMinimum => {
+        SplStakePoolError::SolWithdrawalTooLarge
+        | SplStakePoolError::StakeLamportsNotEqualToMinimum => (
+            SanctumRouterErr::SizeTooLargeErr,
+            format!("{SPL_ERR_PREFIX}{e}"),
+        ),
+        SplStakePoolError::InvalidState | SplStakePoolError::StakeListAndPoolOutOfDate => {
             (SanctumRouterErr::PoolErr, format!("{SPL_ERR_PREFIX}{e}"))
         }
         SplStakePoolError::CalculationFailure => (
@@ -163,7 +185,11 @@ pub fn lido_err(e: LidoError) -> SanctumRouterError {
         LidoError::ValidatorWithMoreStakeExists => {
             (SanctumRouterErr::UserErr, format!("{LIDO_ERR_PREFIX}{e}"))
         }
-        LidoError::InvalidAmount | LidoError::ExchangeRateNotUpdatedInThisEpoch => {
+        LidoError::InvalidAmount => (
+            SanctumRouterErr::SizeTooLargeErr,
+            format!("{LIDO_ERR_PREFIX}{e}"),
+        ),
+        LidoError::ExchangeRateNotUpdatedInThisEpoch => {
             (SanctumRouterErr::PoolErr, format!("{LIDO_ERR_PREFIX}{e}"))
         }
         LidoError::CalculationFailure => (
@@ -183,7 +209,7 @@ pub fn reserve_err(e: ReserveError) -> SanctumRouterError {
 
     let (code, cause) = match e {
         ReserveError::NotEnoughLiquidity => (
-            SanctumRouterErr::PoolErr,
+            SanctumRouterErr::SizeTooLargeErr,
             format!("{RESERVE_ERR_PREFIX}{e}"),
         ),
         ReserveError::InternalError => (

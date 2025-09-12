@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   depositSolFixturesTest,
   depositStakeFixturesTest,
+  expectRouterErr,
   localRpc,
-  parseRouterErr,
   PICOSOL_MINT,
   prefundSwapViaStakeFixturesTest,
   prefundWithdrawStakeFixturesTest,
@@ -39,19 +39,15 @@ describe("SPL Test", async () => {
     const router = await routerForSwaps(rpc, [
       { swap: "withdrawSol", inp: PICOSOL_MINT },
     ]);
-    try {
-      quoteWithdrawSol(router, {
-        // a very large amount
-        amt: 1_000_000_000_000_000_000n,
-        inp: PICOSOL_MINT,
-      });
-      expect.fail("should have thrown");
-    } catch (e) {
-      expect(e).toSatisfy((e) => {
-        const [code] = parseRouterErr(e);
-        return code === "PoolErr";
-      });
-    }
+    expectRouterErr(
+      () =>
+        quoteWithdrawSol(router, {
+          // a very large amount
+          amt: 1_000_000_000_000_000_000n,
+          inp: PICOSOL_MINT,
+        }),
+      "SizeTooLargeErr:SplStakePoolError::SolWithdrawalTooLarge"
+    );
   });
 
   // DepositStake
