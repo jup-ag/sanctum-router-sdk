@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, it } from "vitest";
 import {
   depositStakeFixturesTest,
+  expectRouterErr,
   localRpc,
   NATIVE_MINT,
-  parseRouterErr,
   PICO_VOTE_ACC,
   routerForSwaps,
   STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
@@ -31,22 +31,18 @@ describe("Reserve Test", async () => {
     const router = await routerForSwaps(rpc, [
       { swap: "depositStake", out: NATIVE_MINT },
     ]);
-    try {
-      quoteDepositStake(router, {
-        vote: PICO_VOTE_ACC,
-        inp: {
-          // a very large amount
-          staked: 1_000_000_000_000_000_000n,
-          unstaked: STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
-        },
-        out: NATIVE_MINT,
-      });
-      expect.fail("should have thrown");
-    } catch (e) {
-      expect(e).toSatisfy((e) => {
-        const [code] = parseRouterErr(e);
-        return code === "PoolErr";
-      });
-    }
+    expectRouterErr(
+      () =>
+        quoteDepositStake(router, {
+          vote: PICO_VOTE_ACC,
+          inp: {
+            // a very large amount
+            staked: 1_000_000_000_000_000_000n,
+            unstaked: STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
+          },
+          out: NATIVE_MINT,
+        }),
+      "SizeTooLargeErr:ReserveError::NotEnoughLiquidity"
+    );
   });
 });
