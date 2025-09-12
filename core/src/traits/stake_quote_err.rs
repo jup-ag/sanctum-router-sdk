@@ -73,6 +73,7 @@ impl<E: StakeQuoteError> StakeQuoteError for PrefundWithdrawStakeQuoteErr<E> {
         match self {
             Self::Pool(p) => p.is_vote_specific(),
             Self::Reserve(p) => p.is_vote_specific(),
+            Self::TooSmall => false,
         }
     }
 }

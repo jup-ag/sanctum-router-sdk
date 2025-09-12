@@ -12,6 +12,10 @@ use crate::{
 pub enum PrefundWithdrawStakeQuoteErr<E> {
     Reserve(ReserveError),
     Pool(E),
+
+    /// The stake account to withdraw is too small
+    /// to even pay for the prefund flash loan
+    TooSmall,
 }
 
 impl<E: core::fmt::Debug> Display for PrefundWithdrawStakeQuoteErr<E> {
@@ -38,7 +42,11 @@ pub trait WithdrawStakeQuoter {
 
     /// The default impl here assumes the program does not fund rent-exemption for the
     /// destination stake account that is split to during withdrawal.
-    /// (get_withdraw_stake_quote()'s returned quote.out.unstaked = 0)
+    /// (get_withdraw_stake_quote()'s returned quote.out.unstaked = 0).
+    ///
+    /// This is currently true for all supported stake pools:
+    /// - Spl
+    /// - Lido
     fn quote_prefund_withdraw_stake(
         &self,
         tokens: u64,
@@ -58,6 +66,8 @@ pub trait WithdrawStakeQuoter {
                 ReserveError::NotEnoughLiquidity,
             ));
         }
+        // doc-comment precondition
+        assert!(lamports.unstaked == 0);
         // amount of active stake that will be split
         // from the withdrawn stake account to slumdog
         let prefund_fee = slumdog_target_lamports(reserves_unstake_params, reserves_fee)
@@ -71,14 +81,10 @@ pub trait WithdrawStakeQuoter {
                 out: ActiveStakeParams {
                     vote,
                     lamports: StakeAccountLamports {
-                        // return None if original quote does not give enough
-                        // sol to repay prefund flash loan.
-                        // TODO: even though this is a math error, it might be more
-                        // helpful for consumers to return something like "WithdrawalTooSmall"
-                        // instead but that will require adding it to sanctum-reserve-core
-                        staked: lamports.total().checked_sub(prefund_fee).ok_or(
-                            PrefundWithdrawStakeQuoteErr::Reserve(ReserveError::InternalError),
-                        )?,
+                        staked: lamports
+                            .staked
+                            .checked_sub(prefund_fee)
+                            .ok_or(PrefundWithdrawStakeQuoteErr::TooSmall)?,
                         unstaked: STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
                     },
                 },

@@ -60,6 +60,9 @@ pub enum PrefundSwapViaStakeQuoteErr<W, D> {
     Reserve(ReserveError),
     WithdrawStake(W),
     DepositStake(D),
+
+    /// [`PrefundWithdrawStakeQuoteErr::TooSmall`]
+    WithdrawStakeTooSmall,
 }
 
 impl<W, D> From<PrefundWithdrawStakeQuoteErr<W>> for PrefundSwapViaStakeQuoteErr<W, D> {
@@ -69,6 +72,7 @@ impl<W, D> From<PrefundWithdrawStakeQuoteErr<W>> for PrefundSwapViaStakeQuoteErr
         match e {
             PrefundWithdrawStakeQuoteErr::Pool(e) => Self::WithdrawStake(e),
             PrefundWithdrawStakeQuoteErr::Reserve(e) => Self::Reserve(e),
+            PrefundWithdrawStakeQuoteErr::TooSmall => Self::WithdrawStakeTooSmall,
         }
     }
 }

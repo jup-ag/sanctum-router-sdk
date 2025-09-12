@@ -224,6 +224,13 @@ pub fn reserve_err(e: ReserveError) -> SanctumRouterError {
     }
 }
 
+fn prefund_ws_too_small_err() -> SanctumRouterError {
+    SanctumRouterError {
+        code: SanctumRouterErr::SizeTooSmallErr,
+        cause: Some("withdrawn stake too small".to_owned()),
+    }
+}
+
 pub fn prefund_wsq_err<E>(
     e: PrefundWithdrawStakeQuoteErr<E>,
     handle_pool: fn(E) -> SanctumRouterError,
@@ -231,6 +238,7 @@ pub fn prefund_wsq_err<E>(
     match e {
         PrefundWithdrawStakeQuoteErr::Reserve(e) => reserve_err(e),
         PrefundWithdrawStakeQuoteErr::Pool(e) => handle_pool(e),
+        PrefundWithdrawStakeQuoteErr::TooSmall => prefund_ws_too_small_err(),
     }
 }
 
@@ -247,6 +255,7 @@ pub fn prefund_svsq_err<W, D>(
         PrefundSwapViaStakeQuoteErr::Reserve(e) => reserve_err(e),
         PrefundSwapViaStakeQuoteErr::WithdrawStake(e) => handle_w(e),
         PrefundSwapViaStakeQuoteErr::DepositStake(e) => handle_d(e),
+        PrefundSwapViaStakeQuoteErr::WithdrawStakeTooSmall => prefund_ws_too_small_err(),
     }
 }
 

@@ -1,5 +1,6 @@
 import { describe, it } from "vitest";
 import {
+  BSOL_MINT,
   expectRouterErr,
   localRpc,
   prefundSwapViaStakeFixturesTest,
@@ -7,9 +8,13 @@ import {
   routerForSwaps,
   STSOL_MINT,
 } from "../utils";
-import { quotePrefundWithdrawStake } from "@sanctumso/sanctum-router";
+import {
+  quotePrefundSwapViaStake,
+  quotePrefundWithdrawStake,
+} from "@sanctumso/sanctum-router";
 
 const STSOL_TOKEN_ACC_NAME = "signer-stsol-token";
+const STSOL_EXCEED_WITHDRAW_LAMPORTS_IN_STSOL = 310_355_474_592n;
 
 describe("Lido Test", async () => {
   // PrefundWithdrawStake
@@ -28,11 +33,25 @@ describe("Lido Test", async () => {
     expectRouterErr(
       () =>
         quotePrefundWithdrawStake(router, {
-          // a very large amount
-          amt: 1_000_000_000_000_000_000n,
+          amt: STSOL_EXCEED_WITHDRAW_LAMPORTS_IN_STSOL,
           inp: STSOL_MINT,
         }),
       "SizeTooLargeErr:LidoError::InvalidAmount"
+    );
+  });
+
+  it("lido-prefund-withdraw-stake-fails-withdrawal-too-small-for-prefund", async () => {
+    const rpc = localRpc();
+    const router = await routerForSwaps(rpc, [
+      { swap: "prefundWithdrawStake", inp: STSOL_MINT },
+    ]);
+    expectRouterErr(
+      () =>
+        quotePrefundWithdrawStake(router, {
+          amt: 1_000n,
+          inp: STSOL_MINT,
+        }),
+      "SizeTooSmallErr:withdrawn stake too small"
     );
   });
 
@@ -93,6 +112,38 @@ describe("Lido Test", async () => {
         out: "signer-bsol-token",
       },
       { useBridgeVote: true }
+    );
+  });
+
+  it("lido-prefund-swap-via-stake-fails-withdrawal-too-large", async () => {
+    const rpc = localRpc();
+    const router = await routerForSwaps(rpc, [
+      { swap: "prefundSwapViaStake", inp: STSOL_MINT, out: BSOL_MINT },
+    ]);
+    expectRouterErr(
+      () =>
+        quotePrefundSwapViaStake(router, {
+          amt: STSOL_EXCEED_WITHDRAW_LAMPORTS_IN_STSOL,
+          inp: STSOL_MINT,
+          out: BSOL_MINT,
+        }),
+      "SizeTooLargeErr:LidoError::InvalidAmount"
+    );
+  });
+
+  it("lido-prefund-swap-via-stake-fails-withdrawal-too-small-for-prefund", async () => {
+    const rpc = localRpc();
+    const router = await routerForSwaps(rpc, [
+      { swap: "prefundSwapViaStake", inp: STSOL_MINT, out: BSOL_MINT },
+    ]);
+    expectRouterErr(
+      () =>
+        quotePrefundSwapViaStake(router, {
+          amt: 1_000n,
+          inp: STSOL_MINT,
+          out: BSOL_MINT,
+        }),
+      "SizeTooSmallErr:withdrawn stake too small"
     );
   });
 });

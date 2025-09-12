@@ -15,7 +15,16 @@ import {
   quoteWithdrawSol,
 } from "@sanctumso/sanctum-router";
 
+// picsol validator list fixtures:
+// - vsi_active_lamports=210_425__790_541_328
+// - mint_supply=108_350_488_973_931
+// - total_lamports=128_350__525_083_404
+// - stake_withdrawal_fee=0
+// (yes i know the numbers dont add up, see test fixtures README)
+
 const PICOSOL_TOKEN_ACC_NAME = "signer-picosol-token";
+const PICOSOL_EXCEED_SOL_WITHDRAW = 3_000_613_461_708n;
+const PICOSOL_EXCEED_STAKE_WITHDRAW = 210_425_790_541_328n;
 
 describe("SPL Test", async () => {
   // DepositSol
@@ -42,8 +51,7 @@ describe("SPL Test", async () => {
     expectRouterErr(
       () =>
         quoteWithdrawSol(router, {
-          // a very large amount
-          amt: 1_000_000_000_000_000_000n,
+          amt: PICOSOL_EXCEED_SOL_WITHDRAW,
           inp: PICOSOL_MINT,
         }),
       "SizeTooLargeErr:SplStakePoolError::SolWithdrawalTooLarge"
@@ -73,23 +81,19 @@ describe("SPL Test", async () => {
     );
   });
 
-  it("spl-picosol-quote-prefund-withdraw-stake-fails-when-amt-too-much", async () => {
+  it("spl-picosol-quote-prefund-withdraw-stake-fails-withdrawal-too-large", async () => {
     const rpc = localRpc();
     const router = await routerForSwaps(rpc, [
       { swap: "prefundWithdrawStake", inp: PICOSOL_MINT },
     ]);
-    const quoteFn = () =>
-      quotePrefundWithdrawStake(router, {
-        // picsol validator list fixtures:
-        // - vsi_active_lamports=210_425__790_541_328
-        // - mint_supply=108_350__525_083_404
-        // - total_lamports=128_350__525_083_404
-        // - stake_withdrawal_fee=0
-        // (yes i know the numbers dont add up, see test fixtures README)
-        amt: 177_636_552_503_991n,
-        inp: PICOSOL_MINT,
-      });
-    expect(quoteFn).toThrowError(/StakeLamportsNotEqualToMinimum/);
+    expectRouterErr(
+      () =>
+        quotePrefundWithdrawStake(router, {
+          amt: PICOSOL_EXCEED_STAKE_WITHDRAW,
+          inp: PICOSOL_MINT,
+        }),
+      "SizeTooLargeErr:SplStakePoolError::StakeLamportsNotEqualToMinimum"
+    );
   });
 
   // PrefundSwapViaStake
