@@ -7,8 +7,6 @@ import {
   type InitMint,
   type SwapMints,
   initSyncEmbed,
-  type SanctumRouterErr,
-  allSanctumRouterErrs,
   type SanctumRouterErrMsg,
 } from "@sanctumso/sanctum-router";
 import type { Rpc, SolanaRpcApi } from "@solana/kit";
@@ -16,7 +14,6 @@ import { fetchAccountMap } from "./rpc";
 import { SPL_INIT_HARDCODES } from "./spl";
 import { NATIVE_MINT } from "./token";
 import { expect } from "vitest";
-import { mapTup } from "./ops";
 
 /**
  * Initializes, updates and returns `SanctumRouterHandle` that is ready for quoting
@@ -70,45 +67,15 @@ export async function routerForSwaps(
   return sanctumRouter;
 }
 
-/**
- *
- * @param e
- * @returns [SanctumRouterErr, rest of error message]
- */
-export function parseRouterErr(e: unknown): [SanctumRouterErr, string] {
-  if (!(e instanceof Error)) {
-    throw new Error("not Error", { cause: e });
-  }
-
-  const i = e.message.indexOf(":");
-  if (i < 0) {
-    console.log(i);
-    throw new Error("Not a SanctumRouterErr", { cause: e });
-  }
-  const code = e.message.substring(0, i);
-  const rest = e.message.substring(i + 1);
-  if (!assertSanctumRouterErr(code)) {
-    throw new Error(`Invalid SanctumRouterErr code ${code}`, { cause: e });
-  }
-  return [code, rest];
-}
-
 export async function expectRouterErr<T>(
   f: () => T | Promise<T>,
   expected: SanctumRouterErrMsg
 ) {
-  let shouldNotHappen: T;
   try {
-    shouldNotHappen = await f();
+    await f();
   } catch (e) {
     expect((e as Error).message).toBe(expected);
     return;
   }
   throw new Error("Expected failure");
-}
-
-function assertSanctumRouterErr(code: string): code is SanctumRouterErr {
-  // very strange but `as readonly Array<string>` gives ts error but
-  // `as readonly string[]` does not
-  return (allSanctumRouterErrs() as readonly string[]).includes(code);
 }
