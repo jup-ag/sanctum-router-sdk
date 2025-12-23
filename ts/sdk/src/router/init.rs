@@ -1,10 +1,11 @@
 use std::collections::hash_map::Entry;
 
 use bs58_fixed_wasm::Bs58Array;
-use sanctum_marinade_liquid_staking_core::MSOL_MINT_ADDR;
-use sanctum_router_core::NATIVE_MINT;
+use sanctum_router_std::{
+    sanctum_marinade_liquid_staking_core::MSOL_MINT_ADDR, solido_legacy_core::STSOL_MINT_ADDR,
+    NATIVE_MINT,
+};
 use serde::{Deserialize, Serialize};
-use solido_legacy_core::STSOL_MINT_ADDR;
 use tsify_next::Tsify;
 use wasm_bindgen::prelude::*;
 
@@ -13,7 +14,7 @@ use crate::{
     init::InitData,
     interface::B58PK,
     router::{SanctumRouter, SanctumRouterHandle},
-    routers::SplStakePoolRouterOwned,
+    routers::SplRouterOwned,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Tsify)]
@@ -53,7 +54,7 @@ pub fn init(
                     match this.spl_routers.entry(spl_mint) {
                         Entry::Occupied(_already_init) => Ok(()),
                         Entry::Vacant(v) => {
-                            v.insert(SplStakePoolRouterOwned::init(&init_data)?);
+                            v.insert(SplRouterOwned::init(&init_data)?);
                             Ok(())
                         }
                     }
@@ -68,8 +69,10 @@ pub fn init(
 /// Returns a byte array where ret[i] corresponds to the result for `mints[i]`.
 /// 0 - false, 1 - true.
 ///
-/// This fn returns a byte array instead of `boolean` array because wasm_bindgen's type
-/// conversion doesnt work with bool arrays.
+/// This fn returns a byte array
+/// - instead of `boolean` array because wasm_bindgen's type
+///   conversion doesnt work with bool arrays.
+/// - instead of bitstring for ease of use for downstream js consumers
 #[wasm_bindgen(js_name = isInit)]
 pub fn is_init(
     SanctumRouterHandle(this): &mut SanctumRouterHandle,
