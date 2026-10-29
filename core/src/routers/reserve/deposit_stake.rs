@@ -4,9 +4,11 @@ use sanctum_reserve_core::{
     UnstakeQuote,
 };
 
+use sanctum_spl_stake_pool_core::STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS;
+
 use crate::{
-    ActiveStakeParams, DepositStakeQuote, DepositStakeQuoter, DepositStakeSufAccs,
-    SLUMDOG_TARGET_LAMPORTS, STAKE_PROGRAM, SYSTEM_PROGRAM, SYSVAR_CLOCK, TOKEN_PROGRAM,
+    slumdog_target_lamports, ActiveStakeParams, DepositStakeQuote, DepositStakeQuoter,
+    DepositStakeSufAccs, STAKE_PROGRAM, SYSTEM_PROGRAM, SYSVAR_CLOCK, TOKEN_PROGRAM,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -66,7 +68,18 @@ impl ReserveDepositStakeQuoter<'_> {
 
     #[inline]
     pub fn after_prefund(self) -> Result<Self, ReserveError> {
-        let quote = self.quote_deposit_stake_inner(SLUMDOG_TARGET_LAMPORTS)?;
+        self.after_prefund_with_rent(STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS)
+    }
+
+    /// [`Self::after_prefund`] for the stake account rent-exemption of the current rent sysvar
+    #[inline]
+    pub fn after_prefund_with_rent(
+        self,
+        stake_account_rent_exempt_lamports: u64,
+    ) -> Result<Self, ReserveError> {
+        let quote = self.quote_deposit_stake_inner(slumdog_target_lamports(
+            stake_account_rent_exempt_lamports,
+        ))?;
         let Self {
             fee_account,
             protocol_fee: protocol_fee_account,

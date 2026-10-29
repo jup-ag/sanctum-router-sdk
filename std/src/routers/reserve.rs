@@ -5,6 +5,7 @@ use sanctum_router_core::{
         self, stake_account_record_seeds, Fee, FeeEnum, Pool, ProtocolFee, ProtocolFeeRatios,
         Rational,
     },
+    sanctum_spl_stake_pool_core::STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
     ReserveDepositStakeQuoter, ReserveDepositStakeSufAccs,
 };
 
@@ -151,18 +152,64 @@ impl<F: Fn(&[&[u8]], &[u8; 32]) -> Option<([u8; 32], u8)>> DepositStake for Rese
 
     #[inline]
     fn deposit_stake_quoter(&self) -> Self::Quoter<'_> {
-        let quoter = self.0.deposit_stake_quoter();
-        quoter.after_prefund().unwrap_or(ReserveDepositStakeQuoter {
-            // if reserve is unable to service a prefund op
-            // then it shouldnt be able to service any other
-            // stake deposits
-            pool_sol_reserves: 0,
-            ..quoter
-        })
+        after_prefund_quoter(
+            self.0.deposit_stake_quoter(),
+            STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
+        )
     }
 
     #[inline]
     fn deposit_stake_suf_accs(&self, dsa: &DepositStakeAddrs) -> Option<Self::SufAccs<'_>> {
         self.0.deposit_stake_suf_accs(dsa)
     }
+}
+
+/// [`ReserveRouterPpf`] for the stake account rent-exemption of the current rent sysvar
+#[derive(Debug, Clone, PartialEq)]
+pub struct ReserveRouterPpfWithRent<F> {
+    pub router: ReserveRouter<F>,
+    pub stake_account_rent_exempt_lamports: u64,
+}
+
+impl<F: Fn(&[&[u8]], &[u8; 32]) -> Option<([u8; 32], u8)>> DepositStake
+    for ReserveRouterPpfWithRent<F>
+{
+    type Quoter<'a>
+        = ReserveDepositStakeQuoter<'a>
+    where
+        F: 'a;
+
+    type SufAccs<'a>
+        = ReserveDepositStakeSufAccs
+    where
+        F: 'a;
+
+    #[inline]
+    fn deposit_stake_quoter(&self) -> Self::Quoter<'_> {
+        after_prefund_quoter(
+            self.router.deposit_stake_quoter(),
+            self.stake_account_rent_exempt_lamports,
+        )
+    }
+
+    #[inline]
+    fn deposit_stake_suf_accs(&self, dsa: &DepositStakeAddrs) -> Option<Self::SufAccs<'_>> {
+        self.router.deposit_stake_suf_accs(dsa)
+    }
+}
+
+#[inline]
+fn after_prefund_quoter(
+    quoter: ReserveDepositStakeQuoter<'_>,
+    stake_account_rent_exempt_lamports: u64,
+) -> ReserveDepositStakeQuoter<'_> {
+    quoter
+        .after_prefund_with_rent(stake_account_rent_exempt_lamports)
+        .unwrap_or(ReserveDepositStakeQuoter {
+            // if reserve is unable to service a prefund op
+            // then it shouldnt be able to service any other
+            // stake deposits
+            pool_sol_reserves: 0,
+            ..quoter
+        })
 }

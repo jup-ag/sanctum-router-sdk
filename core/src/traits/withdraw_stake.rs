@@ -4,9 +4,8 @@ use sanctum_reserve_core::{FeeEnum, PoolUnstakeParams, ReserveError};
 use sanctum_spl_stake_pool_core::STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS;
 
 use crate::{
-    reserves_has_enough_for_slumdog, ActiveStakeParams, Prefund, StakeAccountLamports,
-    StakeQuoteError, WithdrawStakeQuote, SLUMDOG_TARGET_LAMPORTS,
-    STAKE_PROG_MIN_DELEGATION_LAMPORTS,
+    reserves_has_enough_for_slumdog_with_rent, ActiveStakeParams, Prefund, StakeAccountLamports,
+    StakeQuoteError, WithdrawStakeQuote, STAKE_PROG_MIN_DELEGATION_LAMPORTS,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -55,9 +54,28 @@ pub trait WithdrawStakeQuoter {
         reserves_unstake_params: &PoolUnstakeParams,
         reserves_fee: &FeeEnum,
     ) -> Result<Prefund<WithdrawStakeQuote>, PrefundWithdrawStakeQuoteErr<Self::Error>> {
+        self.quote_prefund_withdraw_stake_with_rent(
+            tokens,
+            vote,
+            reserves_unstake_params,
+            reserves_fee,
+            STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
+        )
+    }
+
+    /// [`Self::quote_prefund_withdraw_stake`] for the stake account rent-exemption
+    /// of the current rent sysvar
+    fn quote_prefund_withdraw_stake_with_rent(
+        &self,
+        tokens: u64,
+        vote: Option<&[u8; 32]>,
+        reserves_unstake_params: &PoolUnstakeParams,
+        reserves_fee: &FeeEnum,
+        stake_account_rent_exempt_lamports: u64,
+    ) -> Result<Prefund<WithdrawStakeQuote>, PrefundWithdrawStakeQuoteErr<Self::Error>> {
         // amount of active stake that will be split
         // from the withdrawn stake account to slumdog
-        const PREFUND_FEE: u64 = SLUMDOG_TARGET_LAMPORTS - STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS;
+        const PREFUND_FEE: u64 = STAKE_PROG_MIN_DELEGATION_LAMPORTS;
 
         let WithdrawStakeQuote {
             inp,
@@ -66,8 +84,12 @@ pub trait WithdrawStakeQuoter {
         } = self
             .quote_withdraw_stake(tokens, vote)
             .map_err(PrefundWithdrawStakeQuoteErr::Pool)?;
-        reserves_has_enough_for_slumdog(reserves_unstake_params, reserves_fee)
-            .map_err(PrefundWithdrawStakeQuoteErr::Reserve)?;
+        reserves_has_enough_for_slumdog_with_rent(
+            reserves_unstake_params,
+            reserves_fee,
+            stake_account_rent_exempt_lamports,
+        )
+        .map_err(PrefundWithdrawStakeQuoteErr::Reserve)?;
 
         // doc-comment precondition
         assert!(lamports.unstaked == 0);
@@ -87,7 +109,7 @@ pub trait WithdrawStakeQuoter {
                     vote,
                     lamports: StakeAccountLamports {
                         staked: lamports_staked,
-                        unstaked: STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
+                        unstaked: stake_account_rent_exempt_lamports,
                     },
                 },
                 fee,

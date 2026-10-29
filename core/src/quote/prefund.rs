@@ -34,10 +34,30 @@ pub const SLUMDOG_TARGET_LAMPORTS: u64 = {
     STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS + STAKE_PROG_MIN_DELEGATION_LAMPORTS
 };
 
+/// [`SLUMDOG_TARGET_LAMPORTS`] for the stake account rent-exemption of the current rent sysvar
+#[inline]
+pub const fn slumdog_target_lamports(stake_account_rent_exempt_lamports: u64) -> u64 {
+    stake_account_rent_exempt_lamports + STAKE_PROG_MIN_DELEGATION_LAMPORTS
+}
+
 #[inline]
 pub fn reserves_has_enough_for_slumdog(
     reserves_unstake_params: &PoolUnstakeParams,
     reserves_fee: &FeeEnum,
+) -> Result<(), ReserveError> {
+    reserves_has_enough_for_slumdog_with_rent(
+        reserves_unstake_params,
+        reserves_fee,
+        STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
+    )
+}
+
+/// [`reserves_has_enough_for_slumdog`] for the stake account rent-exemption of the current rent sysvar
+#[inline]
+pub fn reserves_has_enough_for_slumdog_with_rent(
+    reserves_unstake_params: &PoolUnstakeParams,
+    reserves_fee: &FeeEnum,
+    stake_account_rent_exempt_lamports: u64,
 ) -> Result<(), ReserveError> {
     (ReserveDepositStakeQuoter {
         fee_account: reserves_fee,
@@ -53,8 +73,8 @@ pub fn reserves_has_enough_for_slumdog(
     })
     .quote_deposit_stake(ActiveStakeParams {
         lamports: StakeAccountLamports {
-            staked: SLUMDOG_TARGET_LAMPORTS - STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
-            unstaked: STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
+            staked: STAKE_PROG_MIN_DELEGATION_LAMPORTS,
+            unstaked: stake_account_rent_exempt_lamports,
         },
         vote: Default::default(), // dontcare
     })

@@ -1,6 +1,7 @@
 use core::{error::Error, fmt::Display};
 
 use sanctum_reserve_core::{FeeEnum, PoolUnstakeParams, ReserveError};
+use sanctum_spl_stake_pool_core::STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS;
 
 use crate::{
     DepositStakeQuote, DepositStakeQuoter, Prefund, PrefundWithdrawStakeQuoteErr, StakeQuoteError,
@@ -18,14 +19,35 @@ pub fn quote_prefund_swap_via_stake<W: WithdrawStakeQuoter, D: DepositStakeQuote
     reserves_unstake_params: &PoolUnstakeParams,
     reserves_fee: &FeeEnum,
 ) -> QuotePrefundSwapViaStakeResult<W::Error, D::Error> {
+    quote_prefund_swap_via_stake_with_rent(
+        w_itr,
+        d,
+        inp_tokens,
+        reserves_unstake_params,
+        reserves_fee,
+        STAKE_ACCOUNT_RENT_EXEMPT_LAMPORTS,
+    )
+}
+
+/// [`quote_prefund_swap_via_stake`] for the stake account rent-exemption of the current rent sysvar
+#[inline]
+pub fn quote_prefund_swap_via_stake_with_rent<W: WithdrawStakeQuoter, D: DepositStakeQuoter>(
+    w_itr: impl IntoIterator<Item = W>,
+    d: D,
+    inp_tokens: u64,
+    reserves_unstake_params: &PoolUnstakeParams,
+    reserves_fee: &FeeEnum,
+    stake_account_rent_exempt_lamports: u64,
+) -> QuotePrefundSwapViaStakeResult<W::Error, D::Error> {
     w_itr
         .into_iter()
         .filter_map(|w| {
-            let wsq = match map_res(w.quote_prefund_withdraw_stake(
+            let wsq = match map_res(w.quote_prefund_withdraw_stake_with_rent(
                 inp_tokens,
                 None,
                 reserves_unstake_params,
                 reserves_fee,
+                stake_account_rent_exempt_lamports,
             ))? {
                 // stop iteration with err
                 Err(e) => return Some(Err(e.into())),
